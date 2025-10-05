@@ -7,44 +7,67 @@ import ToDoList from './components/ToDoList/ToDoList';
 import AddModalList from './components/AddModalList/AddModalList';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
+import 'firebase/compat/auth';
 import firebaseConfig from './Firebase';
 
 export default function App() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [lists, setLists] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    firebase.initializeApp(firebaseConfig);
-    const listsRef = firebase
-      .firestore()
-      .collection('users')
-      .doc('B5zaFWrBoE2YK4UGYTaW')
-      .collection('lists');
-
-    listsRef.get().then((snap) => {
-      const fetchedLists = snap.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        color: doc.data().color,
-        todos: doc.data().todos,
-      }));
-
-      setLists(fetchedLists); 
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
+      setUser(u);
+      if (u) {
+        const listsRef = firebase
+          .firestore()
+          .collection('users')
+          .doc(u.uid)
+          .collection('lists');
+        listsRef.get().then((snap) => {
+          const fetchedLists = snap.docs.map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+            color: doc.data().color,
+            todos: doc.data().todos,
+          }));
+          setLists(fetchedLists); 
+        });
+      } else {
+        setLists([]);
+      }
     });
+    return () => unsubscribe();
   }, []);
-  
-  
+
+  const handleGoogleSignIn = async () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      await firebase.auth().signInWithPopup(provider);
+    } catch (error) {
+      alert('Google Sign-In failed');
+    }
+  };
+
+  const handleSignOut = async () => {
+    await firebase.auth().signOut();
+    setLists([]);
+  };
 
   const toggleModal = () => {
     setModalVisible(!modalVisible);
   };
 
   const addNewList = (list) => {
+    if (!user) return;
     firebase
       .firestore()
       .collection('users')
-      .doc('B5zaFWrBoE2YK4UGYTaW')
+      .doc(user.uid)
       .collection('lists')
       .add({
         name: list.name,
@@ -66,11 +89,11 @@ export default function App() {
   
 
   const updatelist = (list) => {
-    
+    if (!user) return;
     firebase
       .firestore()
       .collection('users')
-      .doc('B5zaFWrBoE2YK4UGYTaW')
+      .doc(user.uid)
       .collection('lists')
       .doc(list.id)
       .update({
@@ -95,11 +118,30 @@ export default function App() {
   
   return (
     <View style={styles.container}>
+      <View style={{ position: 'absolute', top: 40, right: 20, zIndex: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {user && user.photoURL && (
+            <img
+              src={user.photoURL}
+              alt="avatar"
+              style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }}
+            />
+          )}
+          {user && (
+            <Text style={{ marginRight: 8 }}>{user.displayName}</Text>
+          )}
+          <TouchableOpacity onPress={user ? handleSignOut : handleGoogleSignIn}>
+            <Text style={{ color: colors.orange2, fontWeight: 'bold' }}>
+              {user ? 'Sign Out' : 'Sign-In with Google'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       <Modal
       animationType='slide' 
       visible={modalVisible} 
       onRequestClose={toggleModal}>
-        <AddModalList closeModal={toggleModal} addLists={addNewList} />
+        <AddModalList closeModal={toggleModal} addLists={addNewList} user={user}/>
       </Modal>
       <View style={{flexDirection: 'row'}}>
         <View style={styles.separator} />
@@ -147,7 +189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  separator : {
+  separator: {
     height: 1,
     flex: 1,
     alignItems: 'center',
@@ -159,7 +201,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.orange1, 
   },
-  addList : {
+  addList: {
     borderWidth: 2,
     borderColor: colors.lightBlue,
     borderRadius: 4,
@@ -167,7 +209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  add : {
+  add: {
     color: colors.lightBlue,
     fontWeight: 'bold',
     fontSize: 20,
