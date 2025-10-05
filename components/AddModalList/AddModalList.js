@@ -1,5 +1,5 @@
 import { AntDesign } from '@expo/vector-icons';
-import React, {useState} from 'react';
+import {useState} from 'react';
 
 import { View, Text, StyleSheet, KeyboardAvoidingView, TouchableOpacity, TextInput } from 'react-native';
 import colors from '../../colors';
@@ -15,10 +15,11 @@ const AddModalList = (props) => {
     const [Color, setColor] = useState(bgcolors[0]);
 
     const createToDo = () => {
+        if (!props.user) return;
 
         firebase.initializeApp(firebaseConfig);
 
-        firebase.firestore().collection('users').doc('B5zaFWrBoE2YK4UGYTaW').collection('lists').add(
+        firebase.firestore().collection('users').doc(props.user.uid).collection('lists').add(
             {
                 name: Name,
                 color: Color,
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.blue,
     },
-    title : {
+    title: {
         fontSize: 20,
         fontWeight: "800",
         color: colors.black,
@@ -121,4 +122,5 @@ const styles = StyleSheet.create({
          borderRadius: 4
     },
 })
+
 export default AddModalList;
