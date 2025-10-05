@@ -1,7 +1,4 @@
-import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
-import { getDatabase } from 'firebase/database';
-import firestore from '@react-native-firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAOj_uPr_IrH4kkt8jpO6Hdvjtl3XSBYFA",
