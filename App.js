@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import { FlatList, Modal, TouchableOpacity } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import { View, Text, StyleSheet } from 'react-native';
